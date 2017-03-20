@@ -23,18 +23,12 @@ public class BluetoothManager {
     public static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     public static final int REQUEST_ENABLE_BT = 3;
     private BluetoothAdapter mBluetoothAdapter = null;
-    //private ChatService mChatService = null;
     private ChatService mChatService = null;
     private Context mContext;
-//    private Activity mActivity;
 
-    public BluetoothManager(Context context
-//            , Activity activity
-    ) {
+    public BluetoothManager(Context context) {
         mContext = context;
-//        mActivity = activity;
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
         if (mBluetoothAdapter == null) {
             Toast.makeText(mContext, "Bluetooth is not available", Toast.LENGTH_LONG).show();
         }
@@ -85,14 +79,11 @@ public class BluetoothManager {
 
     public void setupChat() {
         // Initialize the ChatService to perform bluetooth connections
-        //mChatService = new ChatService(mContext, mHandler);
-        mChatService = new ChatService(mContext, mHandler);
+        mChatService = new ChatService(mHandler);
 
     }
 
     public void sendMessage(String message) {
-        //message = message.length() + message + Constants.HEADER;
-
         int count = 0;
         while (mChatService.getState() != ChatService.STATE_CONNECTED) {
             try {
@@ -150,102 +141,25 @@ public class BluetoothManager {
                     if (null != activity) {
                         Toast.makeText(activity, "Data Sent Successfully",
                                 Toast.LENGTH_SHORT).show();
-                        //progressDialog.dismiss();
                     }
                     break;
                 case Constants.MESSAGE_TOAST_RECIEVED_ACKNOWLEDGMENT:
                     if (null != activity) {
                         Toast.makeText(activity, "Data Recieved Successfully",
                                 Toast.LENGTH_SHORT).show();
-                        //progressDialog.dismiss();
                     }
                     break;
             }
         }
     };
 
-    public void onResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case REQUEST_CONNECT_DEVICE_SECURE:
-                // When DeviceListActivity returns with a device to connect
-                if (resultCode == Activity.RESULT_OK) {
-//                    new SendDataAsyncTask(data, true, dataToSend).execute();
-//                    connectDevice(data, true);
-//                    sendMessage(dataToSend);
-                }
-                break;
-            case REQUEST_ENABLE_BT:
-                // When the request to enable Bluetooth returns
-                if (resultCode == Activity.RESULT_OK) {
-                    // Bluetooth is now enabled, so set up a chat session
-                    setupChat();
-                } else {
-                    // User did not enable Bluetooth or an error occurred
-                    Toast.makeText(mContext, R.string.bt_not_enabled_leaving,
-                            Toast.LENGTH_SHORT).show();
-                }
-                break;
-            default:
-                sendMessage(new String("hello"));
-        }
-    }
 
     public void connectDevice(Intent data, boolean secure) {
         // Get the device MAC address
-        String address = data.getExtras()
-                .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+        String address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
         mChatService.connect(device, secure);
-        //sendMessage(msg);
-    }
-
-    public class SendDataAsyncTask extends AsyncTask<Void, Void, Void> {
-
-        //        private ProgressDialog progressDialog;
-        private DataSentListener dataSentListener;
-        private Intent data;
-        private boolean b;
-        private String dataToSend;
-
-        public SendDataAsyncTask(DataSentListener dataSentListener) {
-            this.dataSentListener = dataSentListener;
-        }
-
-        public SendDataAsyncTask(Intent data, boolean b, String dataToSend) {
-            this.data = data;
-            this.b = b;
-            this.dataToSend = dataToSend;
-        }
-
-        @Override
-        protected void onPreExecute() {
-//            try {
-//                progressDialog = new ProgressDialog(mContext);
-//                progressDialog.setMessage("Loading Reports ...");
-//                progressDialog.setCancelable(false);
-//                progressDialog.show();
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            connectDevice(data, b);
-            sendMessage(dataToSend);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-//            progressDialog.dismiss();
-        }
-
-    }
-
-    public interface DataSentListener {
-        void onSentComplete();
     }
 }

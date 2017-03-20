@@ -16,9 +16,6 @@
 
 package com.pitb.bluetoothmodel.constants;
 
-/**
- * Defines several constants used between {@link com.pitb.bluetoothmodel.com.pitb.bluetoothmodel.BluetoothChatService} and the UI.
- */
 public interface Constants {
 
     // Message types sent from the BluetoothChatService Handler

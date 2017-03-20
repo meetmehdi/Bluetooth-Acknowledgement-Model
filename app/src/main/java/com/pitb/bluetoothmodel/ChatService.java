@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -23,19 +22,14 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import static android.content.ContentValues.TAG;
-import static com.pitb.bluetoothmodel.MainActivity.mBuilder;
-import static com.pitb.bluetoothmodel.MainActivity.mNotifyManager;
 
 public class ChatService {
 
     private static final String NAME_SECURE = "BluetoothChatSecure";
-    private static final String NAME_INSECURE = "BluetoothChatInsecure";
 
     // Unique UUID for this application
     private static final UUID MY_UUID_SECURE = UUID
             .fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
-    private static final UUID MY_UUID_INSECURE = UUID
-            .fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
 
     // Member fields
     private final BluetoothAdapter bluetoothAdapter;
@@ -44,8 +38,7 @@ public class ChatService {
     private AcceptThread insecureAcceptThread;
     private ConnectThread connectThread;
     private ConnectedThread connectedThread;
-    private int state;
-    private boolean flag = true;
+    private static int state;
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;
@@ -56,7 +49,7 @@ public class ChatService {
 
     public byte[] completeMessage = new byte[0];
 
-    public ChatService(Context context, Handler handler) {
+    public ChatService(Handler handler) {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         state = STATE_NONE;
 
@@ -72,7 +65,7 @@ public class ChatService {
     }
 
     // get current connection state
-    public synchronized int getState() {
+    public synchronized static int getState() {
         return state;
     }
 
@@ -124,8 +117,7 @@ public class ChatService {
     }
 
     // manage Bluetooth connection
-    public synchronized void connected(BluetoothSocket socket,
-                                       BluetoothDevice device, final String socketType) {
+    public synchronized void connected(BluetoothSocket socket, BluetoothDevice device, final String socketType) {
         // Cancel the thread
         if (connectThread != null) {
             connectThread.cancel();
@@ -224,12 +216,7 @@ public class ChatService {
 
             try {
                 if (secure) {
-                    tmp = bluetoothAdapter.listenUsingRfcommWithServiceRecord(
-                            NAME_SECURE, MY_UUID_SECURE);
-                } else {
-                    tmp = bluetoothAdapter
-                            .listenUsingInsecureRfcommWithServiceRecord(
-                                    NAME_INSECURE, MY_UUID_INSECURE);
+                    tmp = bluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID_SECURE);
                 }
             } catch (IOException e) {
                 Log.e(TAG, "istenUsingRfcommWithServiceRecord Exception" + e);
@@ -299,9 +286,6 @@ public class ChatService {
                 if (secure) {
                     tmp = device
                             .createRfcommSocketToServiceRecord(MY_UUID_SECURE);
-                } else {
-                    tmp = device
-                            .createInsecureRfcommSocketToServiceRecord(MY_UUID_INSECURE);
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + socketType + "create() failed", e);
@@ -374,49 +358,13 @@ public class ChatService {
             byte[] ackByte = {125};
 
             int numBytes; // bytes returned from read()
-            int actualLength = 0;
-            long total = 0;
-            String length = "";
 
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
                     // Read from the InputStream.
                     numBytes = mmInStream.read(mmBuffer);
-                    /*byte[] mBuffer = new byte[2024];
-                    mmInStream.read(mBuffer);*/
                     if (numBytes != 0) {
-                        /*if(flag){
-                            StringBuilder builder = new StringBuilder();
-                            //String[] data = new String[]{mmBuffer.toString()};
-                            for(int i=0; i<mmBuffer.length; i++){
-                                if(mmBuffer[i] == 126){
-                                    flag = false;
-                                    break;
-                                }else{
-                                    builder.append(Character.toString((char) mmBuffer[i]));
-                                    length = builder.toString();
-                                    actualLength = Integer.valueOf(length);
-                                    //actualLength = actualLength + Integer.valueOf(mmBuffer[i]);
-                                }
-                            }
-                        }
-                        byte[] exTemp = new byte[mmBuffer.length];
-                        System.arraycopy(mmBuffer, 0, exTemp, 0, mmBuffer.length);
-                        String newStr = new String(exTemp);
-                        total += Integer.valueOf(length);
-                        mBuilder.setContentTitle("Downloading data")
-                                .setContentText("Download in progress")
-                                .setSmallIcon(R.mipmap.ic_launcher);
-
-                        mBuilder.setProgress(100, (int) (total * 100 / actualLength), false);
-                        mNotifyManager.notify(MainActivity.id, mBuilder.build());*/
-                        /*try {
-                            // Sleep for 5 seconds
-                            Thread.sleep(1*1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }*/
                         byte[] tempBytes = completeMessage;
                         completeMessage = new byte[tempBytes.length + numBytes];
                         System.arraycopy(tempBytes, 0, completeMessage, 0, tempBytes.length);
@@ -426,27 +374,17 @@ public class ChatService {
                                 && completeMessage[completeMessage.length - 3] == 126 && completeMessage[completeMessage.length - 4] == 126
                                 && completeMessage[completeMessage.length - 5] == 126) {
                             mmOutStream.write(ackByte);
-                            flag = false;
                             Message readMsg1 = handler.obtainMessage(
                                     Constants.MESSAGE_TOAST_RECIEVED_ACKNOWLEDGMENT, numBytes, -1,
                                     completeMessage);
                             readMsg1.sendToTarget();
                             completeMessage = Arrays.copyOfRange(completeMessage, 0, completeMessage.length - 5);
+
                             //String temp is the complete msg.
                             String temp = new String(completeMessage);
-                            //connectionLost();
-                            /*byte[] tempByte = Base64.decode(temp,0);
-                            Bitmap bitmap = BitmapFactory.decodeByteArray(tempByte , 0, tempByte.length);*/
-                            //SaveImage(bitmap);
-                           /* mBuilder.setContentText("Download complete")
-                                    // Removes the progress bar
-                                    .setProgress(0,0,false);
-                            mNotifyManager.notify(MainActivity.id, mBuilder.build());*/
 
                             Log.i("bluetooth bytes", temp.length() + " writing ack " + temp);
                             completeMessage = new byte[0];
-                            //connectionLost();
-                            //break;
                         } else if (completeMessage.length == 1 && completeMessage[0] == 125) {
                             Message readMsg = handler.obtainMessage(
                                     Constants.MESSAGE_TOAST_SENT_ACKNOWLEDGMENT, numBytes, -1,

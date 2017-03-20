@@ -26,9 +26,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Button mSendButton;
     private BluetoothManager bluetoothManager;
-    private ProgressDialogClass progress;
-//    private BluetoothReciever reciever;
-    public static boolean mIsInForeground;
     public static NotificationManager mNotifyManager;
     public static NotificationCompat.Builder mBuilder;
     public static int id = 1;
@@ -40,15 +37,6 @@ public class MainActivity extends AppCompatActivity {
         mSendButton = (Button) findViewById(R.id.btn);
 
         bluetoothManager = new BluetoothManager(this);
-        mNotifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mBuilder = new NotificationCompat.Builder(this);
-        //progress = new ProgressDialogClass(getApplicationContext());
-
-//        reciever = new BluetoothReciever();
-//        IntentFilter intentFilter1 = new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED);
-//        intentFilter1.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-//        this.registerReceiver(reciever, intentFilter1);
-
         mSendButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 bluetoothManager.send();
@@ -73,22 +61,16 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         bluetoothManager.onDestroy();
     }
-
-    public static boolean isInForeground() {
-        return mIsInForeground;
-    }
-
+    
     @Override
     protected void onPause() {
         super.onPause();
-        mIsInForeground = false;
     }
 
     @Override
     public void onResume() {
         super.onResume();
         bluetoothManager.onResume();
-        mIsInForeground = true;
     }
 
     @Override
@@ -98,19 +80,15 @@ public class MainActivity extends AppCompatActivity {
             case REQUEST_CONNECT_DEVICE_SECURE:
                 // When DeviceListActivity returns with a device to connect
                 if (resultCode == Activity.RESULT_OK) {
-                    if(BluetoothChatService.mState == BluetoothChatService.STATE_LISTEN){
+                    if(ChatService.getState() == ChatService.STATE_LISTEN){
                         Log.v("soc string length", dataToSend.length() + "");
                         new SendDataAsyncTask(data, true, dataToSend).execute();
-                    }else if(BluetoothChatService.mState == BluetoothChatService.STATE_CONNECTED){
+                    }else if(ChatService.getState() == ChatService.STATE_CONNECTED){
                         bluetoothManager.sendMessage(dataToSend);
-                    }else if(BluetoothChatService.mState == BluetoothChatService.STATE_NONE){
-                        //bluetoothManager.onResume();
+                    }else if(ChatService.getState() == ChatService.STATE_NONE){
                         Log.v("soc string length", dataToSend.length() + "");
                         new SendDataAsyncTask(data, true, dataToSend).execute();
                     }
-
-//                    connectDevice(data, true);
-//                    sendMessage(dataToSend);
                 }
                 break;
             case REQUEST_ENABLE_BT:
@@ -125,20 +103,14 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
         }
-//        bluetoothManager.onResult(requestCode, resultCode, data);
     }
 
     public class SendDataAsyncTask extends AsyncTask<Void, Void, Void> {
-
-        private ProgressDialog progressDialog;
-        private BluetoothManager.DataSentListener dataSentListener;
+        
         private Intent data;
         private boolean b;
         private String dataToSend;
-
-        public SendDataAsyncTask(BluetoothManager.DataSentListener dataSentListener) {
-            this.dataSentListener = dataSentListener;
-        }
+        
 
         public SendDataAsyncTask(Intent data, boolean b, String dataToSend) {
             this.data = data;
@@ -148,14 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
-            /*try {
-                progressDialog = new ProgressDialog(MainActivity.this);
-                progressDialog.setMessage("Loading Reports ...");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }*/
+            
         }
 
         @Override
@@ -167,12 +132,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void result) {
-            //progressDialog.dismiss();
         }
 
     }
-
-    public interface DataSentListener {
-        void onSentComplete();
-    }
+    
 }
